@@ -24,6 +24,10 @@ var Main = React.createClass({
 		this.setState({ curPage: 'Register' });
 	},
 
+	handleRegisterSuccess: function handleRegisterSuccess() {
+		this.setState({ curPage: 'Login' });
+	},
+
 	render: function render() {
 		return React.createElement(
 			'div',
@@ -33,7 +37,7 @@ var Main = React.createClass({
 				null,
 				this.state.curPage === 'Login' && React.createElement(Login, { onLoginSuccess: this.handleLoginSuccess, handleRouteRegister: this.handleRouteRegister }),
 				this.state.curPage === 'ChatApp' && React.createElement(ChatApp, null),
-				this.state.curPage === 'Register' && React.createElement(Register, null)
+				this.state.curPage === 'Register' && React.createElement(Register, { onRegisterSuccess: this.handleRegisterSuccess })
 			)
 		);
 	}
@@ -380,19 +384,94 @@ module.exports = Login;
 },{"react":160}],4:[function(require,module,exports){
 'use strict';
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var React = require('react');
 
 var Register = React.createClass({
     displayName: 'Register',
 
+    getInitialState: function getInitialState() {
+        return {
+            username: '',
+            password: '',
+            confirmPassword: ''
+        };
+    },
+
+    handleInputChange: function handleInputChange(e) {
+        var _e$target = e.target;
+        var name = _e$target.name;
+        var value = _e$target.value;
+
+        this.setState(_defineProperty({}, name, value));
+    },
+
+    handleRegisterClick: function handleRegisterClick() {
+        var _this = this;
+
+        var _state = this.state;
+        var username = _state.username;
+        var password = _state.password;
+        var confirmPassword = _state.confirmPassword;
+
+        if (password !== confirmPassword) {
+            alert('비밀번호가 일치하지않습니다!😡');
+            return;
+        }
+
+        fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username: username, password: password })
+        }).then(function (response) {
+            return response.json();
+        }).then(function (data) {
+            if (data.success) {
+                alert('회원가입을 축하합니다.👏🏻👏🏻👏🏻');
+                _this.props.onRegisterSuccess();
+            } else {
+                alert('Registration failed: ' + data.message);
+            }
+        });
+    },
+
     render: function render() {
         return React.createElement(
             'div',
-            null,
+            { className: 'register' },
             React.createElement(
                 'h1',
                 null,
                 '회원가입 테스트^^'
+            ),
+            React.createElement('input', {
+                type: 'text',
+                name: 'username',
+                value: this.state.username,
+                onChange: this.handleInputChange,
+                placeholder: '아이디'
+            }),
+            React.createElement('input', {
+                type: 'password',
+                name: 'password',
+                value: this.state.password,
+                onChange: this.handleInputChange,
+                placeholder: '비밀번호'
+            }),
+            React.createElement('input', {
+                type: 'password',
+                name: 'confirmPassword',
+                value: this.state.confirmPassword,
+                onChange: this.handleInputChange,
+                placeholder: '비밀번호 확인'
+            }),
+            React.createElement(
+                'button',
+                { onClick: this.handleRegisterClick },
+                '회원가입'
             )
         );
     }

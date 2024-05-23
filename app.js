@@ -12,8 +12,7 @@ var socket = require('./routes/socket.js');
 var app = express();
 var server = http.createServer(app);
 
-/* mysql & login ? */
-// app.js
+/* mysql & login */
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 
@@ -46,11 +45,22 @@ app.post('/login', (req, res) => {
     });
 });
 
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
 
-
-/* login  */
-
-
+    const query = 'INSERT INTO users (username, password) VALUES (?, ?)';
+    db.query(query, [username, password], (err, results) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                res.json({ success: false, message: 'User already exists' });
+            } else {
+                throw err;
+            }
+        } else {
+            res.json({ success: true });
+        }
+    });
+});
 
 /* Configuration */
 app.set('views', __dirname + '/views');
@@ -69,7 +79,5 @@ io.sockets.on('connection', socket);
 server.listen(app.get('port'), function (){
   console.log('Express server listening on port %d in %s mode', app.get('port'), app.get('env'));
 });
-
-
 
 module.exports = app;

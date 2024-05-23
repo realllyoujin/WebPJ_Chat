@@ -22,13 +22,17 @@ var Main = React.createClass({
 		this.setState ({ curPage: 'Register'});
 	},
 
+	handleRegisterSuccess(){
+		this.setState ({ curPage: 'Login' });
+	},
+
 	render() {
 		return(
 			<div>
 			<div>
 			{ this.state.curPage === 'Login' && <Login onLoginSuccess={this.handleLoginSuccess} handleRouteRegister={this.handleRouteRegister}/>}
 			{ this.state.curPage === 'ChatApp' && <ChatApp/>}
-			{ this.state.curPage === 'Register' && <Register/>}
+			{ this.state.curPage === 'Register' && <Register onRegisterSuccess={this.handleRegisterSuccess} />}
 			</div>	
 			</div>
 		);
