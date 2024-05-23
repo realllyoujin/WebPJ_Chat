@@ -38,7 +38,7 @@ app.post('/login', (req, res) => {
         if (err) throw err;
 
         if (results.length > 0) {
-            res.json({ success: true });
+            res.json({ success: true, username });
         } else {
             res.json({ success: false });
         }
@@ -62,6 +62,35 @@ app.post('/register', (req, res) => {
     });
 });
 
+app.post('/chatroom', (req, res) => {
+    const { chatroom } = req.body;
+
+    const query = 'SELECT * FROM chatrooms WHERE name = ?';
+    db.query(query, [chatroom], (err, results) => {
+        if (err) throw err;
+
+        if (results.length > 0) {
+            res.json({ success: true, chatroomId: results[0].id });
+        } else {
+            const insertQuery = 'INSERT INTO chatrooms (name) VALUES (?)';
+            db.query(insertQuery, [chatroom], (err, result) => {
+                if (err) throw err;
+                res.json({ success: true, chatroomId: result.insertId });
+            });
+        }
+    });
+});
+
+app.get('/messages', (req, res) => {
+    const { chatroomId } = req.query;
+
+    const query = 'SELECT * FROM messages WHERE chatroom_id = ?';
+    db.query(query, [chatroomId], (err, results) => {
+        if (err) throw err;
+        res.json(results);
+    });
+});
+
 /* Configuration */
 app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
@@ -73,7 +102,27 @@ if (process.env.NODE_ENV === 'development') {
 
 /* Socket.io Communication */
 var io = require('socket.io').listen(server);
-io.sockets.on('connection', socket);
+io.sockets.on('connection', (socket) => {
+    socket.on('join', ({ chatroomId, username }) => {
+        socket.join(chatroomId);
+        socket.chatroomId = chatroomId;
+        socket.username = username;
+        io.to(chatroomId).emit('user:join', username);
+
+        socket.on('send:message', (message) => {
+            const { text } = message;
+            const query = 'INSERT INTO messages (chatroom_id, username, message) VALUES (?, ?, ?)';
+            db.query(query, [chatroomId, username, text], (err) => {
+                if (err) throw err;
+                io.to(chatroomId).emit('send:message', { user: username, text });
+            });
+        });
+
+        socket.on('disconnect', () => {
+            io.to(chatroomId).emit('user:left', username);
+        });
+    });
+});
 
 /* Start server */
 server.listen(app.get('port'), function (){

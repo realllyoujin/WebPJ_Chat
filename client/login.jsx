@@ -29,7 +29,7 @@ var Login = React.createClass({
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.props.onLoginSuccess(); //로그인 성공시 -> onLoginSuccess 동작.
+                this.props.onLoginSuccess(username); //로그인 성공시 -> onLoginSuccess 동작.
             } else {
                 alert('Login failed');
             }

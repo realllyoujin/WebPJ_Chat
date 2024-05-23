@@ -125,10 +125,55 @@ var ChangeNameForm = React.createClass({
 	}
 });
 
+var ChatroomSearch = React.createClass({
+    getInitialState() {
+        return { chatroom: '' };
+    },
+
+    handleInputChange(e) {
+        this.setState({ chatroom: e.target.value });
+    },
+
+    handleSearchClick() {
+        const { chatroom } = this.state;
+
+        fetch('/chatroom', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ chatroom })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.props.onChatroomJoin(data.chatroomId);
+            } else {
+                alert('Error creating or joining chatroom');
+            }
+        });
+    },
+
+    render() {
+        return (
+            <div className='chatroom_search'>
+                <h3> 채팅방 검색 또는 생성 </h3>
+                <input
+                    type="text"
+                    value={this.state.chatroom}
+                    onChange={this.handleInputChange}
+                    placeholder="채팅방 이름"
+                />
+                <button onClick={this.handleSearchClick}>참여</button>
+            </div>
+        );
+    }
+});
+
 var ChatApp = React.createClass({
 
 	getInitialState() {
-		return {users: [], messages:[], text: ''};
+		return {users: [], messages:[], text: '', chatroomId: null};
 	},
 
 	componentDidMount() {
@@ -170,25 +215,30 @@ var ChatApp = React.createClass({
 		});
 	},
 
+    handleChatroomJoin(chatroomId) {
+        socket.emit('join', { chatroomId, username: this.props.username });
+        fetch(`/messages?chatroomId=${chatroomId}`)
+            .then(response => response.json())
+            .then(messages => {
+                this.setState({ chatroomId, messages });
+            });
+    },
+
 	render() {
 		return (
 			<div>
 			<div className='center'>
-			<UsersList
-				users={this.state.users}
-			/>
-			<ChangeNameForm
-				onChangeName={this.handleChangeName}
-			/>
-			{/* <div> */}
-				<MessageList
-					messages={this.state.messages}
-				/>
-				<MessageForm
-					onMessageSubmit={this.handleMessageSubmit}
-					user={this.state.user}
-				/>
-			{/* </div> */}
+            <div className='username_display'>현재 로그인: {this.props.username}</div>
+			{!this.state.chatroomId && <ChatroomSearch onChatroomJoin={this.handleChatroomJoin} />}
+			{this.state.chatroomId && (
+                <div>
+                    <UsersList users={this.state.users} />
+                    <ChangeNameForm onChangeName={this.handleChangeName} />
+                    <div className='chatroom_display'>현재 채팅방: {this.state.chatroomId}</div>
+                    <MessageList messages={this.state.messages} />
+                    <MessageForm onMessageSubmit={this.handleMessageSubmit} user={this.state.user} />
+                </div>
+            )}
 			</div>
 			</div>
 		);
