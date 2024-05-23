@@ -36,10 +36,15 @@ var Login = React.createClass({
         });
     },
 
+    //회원가입 페이지로 이동
+    handleRouteRegisterClick(){
+        this.props.handleRouteRegister();
+    },
+
     render() {
         return (
             <div className='login'>
-                <h1> 로그인ㅎㅎ </h1>
+                <h1> 유니만 들어와~😈✨ </h1>
                 <input
                     type="text" 
                     name="username" 
@@ -55,6 +60,8 @@ var Login = React.createClass({
                     placeholder="비밀번호" 
                 />
                 <button onClick={this.handleLoginClick}>로그인</button>
+
+                <button onClick={this.handleRouteRegisterClick}>회원가입</button>
             </div>
         );
     }

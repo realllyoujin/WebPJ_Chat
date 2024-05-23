@@ -12,10 +12,44 @@ var socket = require('./routes/socket.js');
 var app = express();
 var server = http.createServer(app);
 
-/* mysql */
+/* mysql & login ? */
+// app.js
+const mysql = require('mysql');
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'kimyoujin',
+    password: '1234',
+    database: 'webchatdb'
+});
+
+db.connect((err) => {
+    if (err) throw err;
+    console.log('Connected to database');
+});
+
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
+    db.query(query, [username, password], (err, results) => {
+        if (err) throw err;
+
+        if (results.length > 0) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false });
+        }
+    });
+});
+
 
 
 /* login  */
+
 
 
 /* Configuration */
