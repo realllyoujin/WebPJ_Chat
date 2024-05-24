@@ -1,6 +1,7 @@
 'use strict';
 
 var React = require('react');
+var socket = io.connect();
 var Login = require('./login.jsx');
 var ChatroomSearch = require('./ChatroomSearch.jsx');
 var Chatroom = require('./chatroom.jsx');
@@ -34,6 +35,12 @@ var Main = React.createClass({
         this.setState({ curPage: page });
     },
 
+    handleChangeUsername(newUsername) {
+        const oldUsername = this.state.username;
+        this.setState({ username: newUsername });
+        socket.emit('change:name', { oldName: oldUsername, newName: newUsername });
+    },
+
     render() {
         return (
             <div className='main'>
@@ -48,7 +55,7 @@ var Main = React.createClass({
                     </div>
                 }
                 { this.state.curPage === 'MyPage' && 
-                    <MyPage username={this.state.username} />
+                    <MyPage username={this.state.username} onChangeUsername={this.handleChangeUsername} />
                 }
                 { this.state.curPage === 'Register' && <Register onRegisterSuccess={this.handleRegisterSuccess} /> }
             </div>

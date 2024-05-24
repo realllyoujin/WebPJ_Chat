@@ -3,28 +3,23 @@
 var React = require('react');
 
 var ChatroomSearch = React.createClass({
+
     getInitialState() {
-        return { 
-            chatroom: '', 
-            chatroomExists: null, 
-            chatroomId: null,
-            chatroomName: ''
-        };
+        return { chatroom: '', chatroomExists: null };
     },
 
-    handleInputChange(e) {
-        this.setState({ chatroom: e.target.value, chatroomExists: null });
+    handleChange(e) {
+        this.setState({ chatroom: e.target.value });
     },
 
-    handleSearchClick() {
-        const { chatroom } = this.state;
-
+    handleSearch(e) {
+        e.preventDefault();
         fetch('/chatroom/check', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ chatroom })
+            body: JSON.stringify({ chatroom: this.state.chatroom })
         })
         .then(response => response.json())
         .then(data => {
@@ -36,58 +31,54 @@ var ChatroomSearch = React.createClass({
         });
     },
 
-    handleJoinClick() {
-        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
-    },
-
-    handleCreateClick() {
-        const { chatroom } = this.state;
-
+    handleCreate(e) {
+        e.preventDefault();
         fetch('/chatroom/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ chatroom })
+            body: JSON.stringify({ chatroom: this.state.chatroom })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.props.onChatroomJoin(data.chatroomId, data.chatroomName);
+                this.props.onChatroomJoin(data.chatroomId, this.state.chatroom);
             } else {
-                alert('Error creating chatroom');
+                alert('채팅방 생성에 실패했습니다.');
             }
         });
+    },
+
+    handleJoin(e) {
+        e.preventDefault();
+        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
     },
 
     render() {
         return (
             <div className='chatroom_search'>
-                <h3> 채팅방 검색 또는 생성 </h3>
-                <input
-                    type="text"
-                    value={this.state.chatroom}
-                    onChange={this.handleInputChange}
-                    placeholder="채팅방 이름"
-                />
-                <button onClick={this.handleSearchClick}>검색</button>
-                {this.state.chatroomExists !== null && (
+                <form onSubmit={this.handleSearch}>
+                    <input
+                        type='text'
+                        placeholder='채팅방 이름'
+                        value={this.state.chatroom}
+                        onChange={this.handleChange}
+                    />
+                    <button type='submit'>검색</button>
+                </form>
+                { this.state.chatroomExists === true && 
                     <div>
-                        {this.state.chatroomExists ? (
-                            <div>
-                                <p>채팅방이 존재합니다. 들어가시겠습니까?</p>
-                                <button onClick={this.handleJoinClick}>O</button>
-                                <button onClick={() => this.setState({ chatroomExists: null })}>X</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p>채팅방이 존재하지 않습니다. 생성하시겠습니까?</p>
-                                <button onClick={this.handleCreateClick}>O</button>
-                                <button onClick={() => this.setState({ chatroomExists: null })}>X</button>
-                            </div>
-                        )}
+                        <p>채팅방이 존재합니다. 참여하시겠습니까?</p>
+                        <button onClick={this.handleJoin}>예</button>
                     </div>
-                )}
+                }
+                { this.state.chatroomExists === false &&
+                    <div>
+                        <p>채팅방이 존재하지 않습니다. 생성하시겠습니까?</p>
+                        <button onClick={this.handleCreate}>예</button>
+                    </div>
+                }
             </div>
         );
     }

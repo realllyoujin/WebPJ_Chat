@@ -1,6 +1,7 @@
 'use strict';
 
 var React = require('react');
+var socket = io.connect();
 
 var MyPage = React.createClass({
     getInitialState() {
@@ -25,6 +26,8 @@ var MyPage = React.createClass({
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                this.props.onChangeUsername(newName);  // 부모 컴포넌트의 상태를 업데이트합니다.
+                socket.emit('change:name', { oldName: this.state.username, newName });
                 this.setState({ username: newName, newName: '' });
                 alert('아이디가 변경되었습니다.');
             } else {

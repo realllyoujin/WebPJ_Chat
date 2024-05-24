@@ -1,4 +1,3 @@
-// socket.js
 const mysql = require('mysql');
 
 const db = mysql.createConnection({
@@ -26,19 +25,6 @@ var userNames = (function () {
         }
     };
 
-    // find the lowest unused "guest" name and claim it
-    var getGuestName = function () {
-        var name,
-            nextUserId = 1;
-
-        do {
-            name = 'Guest ' + nextUserId;
-            nextUserId += 1;
-        } while (!claim(name));
-
-        return name;
-    };
-
     // serialize claimed names as an array
     var get = function () {
         var res = [];
@@ -58,65 +44,84 @@ var userNames = (function () {
     return {
         claim: claim,
         free: free,
-        get: get,
-        getGuestName: getGuestName
+        get: get
     };
 }());
 
 // export function for listening to the socket
-module.exports = function (socket) {
-    var name = userNames.getGuestName();
+module.exports = function (io, socket) {
+    var username;
 
-    // send the new user their name and a list of users
-    socket.emit('init', {
-        name: name,
-        users: userNames.get()
-    });
+    // Join chatroom event
+    socket.on('join', ({ chatroomId, chatroomName, username: user }) => {
+        username = user;
+        if (userNames.claim(username)) {
+            socket.join(chatroomId);
+            socket.chatroomId = chatroomId;
+            socket.chatroomName = chatroomName;
+            socket.username = username;
+            io.to(chatroomId).emit('user:join', username);
+            io.to(chatroomId).emit('updateUsersList', userNames.get());
 
-    // notify other clients that a new user has joined
-    socket.broadcast.emit('user:join', {
-        name: name
+            // send the new user their name and a list of users
+            socket.emit('init', {
+                name: username,
+                users: userNames.get()
+            });
+
+            // notify other clients that a new user has joined
+            socket.broadcast.to(chatroomId).emit('user:join', {
+                name: username
+            });
+        } else {
+            socket.emit('usernameExists', { message: 'Username already exists' });
+        }
     });
 
     // broadcast a user's message to other users
     socket.on('send:message', function (data) {
-        const { chatroomId, user, text } = data;
-        socket.broadcast.emit('send:message', {
-            user: name,
+        const { chatroomId, text } = data;
+        socket.broadcast.to(chatroomId).emit('send:message', {
+            user: username,
             text: text
         });
 
         // 메시지 DB에 저장
-        const query = 'INSERT INTO messages (chatroom_id, user, text) VALUES (?, ?, ?)';
-        db.query(query, [chatroomId, user, text], (err, results) => {
+        const query = 'INSERT INTO messages (chatroom_id, username, message) VALUES (?, ?, ?)';
+        db.query(query, [chatroomId, username, text], (err, results) => {
             if (err) throw err;
         });
     });
 
     // validate a user's name change, and broadcast it on success
     socket.on('change:name', function (data, fn) {
-        if (userNames.claim(data.name)) {
-            var oldName = name;
+        if (userNames.claim(data.newName)) {
+            var oldName = username;
             userNames.free(oldName);
 
-            name = data.name;
+            username = data.newName;
 
-            socket.broadcast.emit('change:name', {
+            socket.broadcast.to(socket.chatroomId).emit('change:name', {
                 oldName: oldName,
-                newName: name
+                newName: username
             });
 
-            fn(true);
+            if (typeof fn === 'function') {
+                fn(true);
+            }
         } else {
-            fn(false);
+            if (typeof fn === 'function') {
+                fn(false);
+            }
         }
     });
 
     // clean up when a user leaves, and broadcast it to other users
     socket.on('disconnect', function () {
-        socket.broadcast.emit('user:left', {
-            name: name
+        socket.broadcast.to(socket.chatroomId).emit('user:left', {
+            name: username
         });
-        userNames.free(name);
+        userNames.free(username);
+        io.to(socket.chatroomId).emit('updateUsersList', userNames.get());
     });
 };

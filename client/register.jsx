@@ -1,11 +1,12 @@
+'use strict';
+
 var React = require('react');
 
 var Register = React.createClass({
     getInitialState() {
         return {
             username: '',
-            password: '',
-            confirmPassword: ''
+            password: ''
         };
     },
 
@@ -15,12 +16,7 @@ var Register = React.createClass({
     },
 
     handleRegisterClick() {
-        const { username, password, confirmPassword } = this.state;
-
-        if (password !== confirmPassword) {
-            alert('비밀번호가 일치하지않습니다!😡');
-            return;
-        }
+        const { username, password } = this.state;
 
         fetch('/register', {
             method: 'POST',
@@ -32,10 +28,10 @@ var Register = React.createClass({
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('회원가입을 축하합니다.👏🏻👏🏻👏🏻');
                 this.props.onRegisterSuccess();
+                alert('회원가입 성공');
             } else {
-                alert(`Registration failed: ${data.message}`);
+                alert('회원가입 실패: ' + data.message);
             }
         });
     },
@@ -43,27 +39,20 @@ var Register = React.createClass({
     render() {
         return (
             <div className='register'>
-                <h1>회원가입 테스트^^</h1>
+                <h1>회원가입</h1>
                 <input
-                    type="text"
-                    name="username"
-                    value={this.state.username}
-                    onChange={this.handleInputChange}
-                    placeholder="아이디"
+                    type="text" 
+                    name="username" 
+                    value={this.state.username} 
+                    onChange={this.handleInputChange} 
+                    placeholder="아이디" 
                 />
-                <input
-                    type="password"
-                    name="password"
-                    value={this.state.password}
-                    onChange={this.handleInputChange}
-                    placeholder="비밀번호"
-                />
-                <input
-                    type="password"
-                    name="confirmPassword"
-                    value={this.state.confirmPassword}
-                    onChange={this.handleInputChange}
-                    placeholder="비밀번호 확인"
+                <input 
+                    type="password" 
+                    name="password" 
+                    value={this.state.password} 
+                    onChange={this.handleInputChange} 
+                    placeholder="비밀번호" 
                 />
                 <button onClick={this.handleRegisterClick}>회원가입</button>
             </div>

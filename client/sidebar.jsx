@@ -3,15 +3,15 @@
 var React = require('react');
 
 var Sidebar = React.createClass({
-    handleNavigation(page) {
+    handleNavigate(page) {
         this.props.onNavigate(page);
     },
 
     render() {
         return (
             <div className='sidebar'>
-                <button onClick={() => this.handleNavigation('ChatApp')}>채팅</button>
-                <button onClick={() => this.handleNavigation('MyPage')}>마이페이지</button>
+                <button onClick={() => this.handleNavigate('ChatApp')}>채팅</button>
+                <button onClick={() => this.handleNavigate('MyPage')}>마이페이지</button>
             </div>
         );
     }

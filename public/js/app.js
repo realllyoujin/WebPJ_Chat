@@ -7,29 +7,23 @@ var ChatroomSearch = React.createClass({
     displayName: 'ChatroomSearch',
 
     getInitialState: function getInitialState() {
-        return {
-            chatroom: '',
-            chatroomExists: null,
-            chatroomId: null,
-            chatroomName: ''
-        };
+        return { chatroom: '', chatroomExists: null };
     },
 
-    handleInputChange: function handleInputChange(e) {
-        this.setState({ chatroom: e.target.value, chatroomExists: null });
+    handleChange: function handleChange(e) {
+        this.setState({ chatroom: e.target.value });
     },
 
-    handleSearchClick: function handleSearchClick() {
+    handleSearch: function handleSearch(e) {
         var _this = this;
 
-        var chatroom = this.state.chatroom;
-
+        e.preventDefault();
         fetch('/chatroom/check', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ chatroom: chatroom })
+            body: JSON.stringify({ chatroom: this.state.chatroom })
         }).then(function (response) {
             return response.json();
         }).then(function (data) {
@@ -41,97 +35,77 @@ var ChatroomSearch = React.createClass({
         });
     },
 
-    handleJoinClick: function handleJoinClick() {
-        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
-    },
-
-    handleCreateClick: function handleCreateClick() {
+    handleCreate: function handleCreate(e) {
         var _this2 = this;
 
-        var chatroom = this.state.chatroom;
-
+        e.preventDefault();
         fetch('/chatroom/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ chatroom: chatroom })
+            body: JSON.stringify({ chatroom: this.state.chatroom })
         }).then(function (response) {
             return response.json();
         }).then(function (data) {
             if (data.success) {
-                _this2.props.onChatroomJoin(data.chatroomId, data.chatroomName);
+                _this2.props.onChatroomJoin(data.chatroomId, _this2.state.chatroom);
             } else {
-                alert('Error creating chatroom');
+                alert('채팅방 생성에 실패했습니다.');
             }
         });
     },
 
-    render: function render() {
-        var _this3 = this;
+    handleJoin: function handleJoin(e) {
+        e.preventDefault();
+        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
+    },
 
+    render: function render() {
         return React.createElement(
             'div',
             { className: 'chatroom_search' },
             React.createElement(
-                'h3',
-                null,
-                ' 채팅방 검색 또는 생성 '
+                'form',
+                { onSubmit: this.handleSearch },
+                React.createElement('input', {
+                    type: 'text',
+                    placeholder: '채팅방 이름',
+                    value: this.state.chatroom,
+                    onChange: this.handleChange
+                }),
+                React.createElement(
+                    'button',
+                    { type: 'submit' },
+                    '검색'
+                )
             ),
-            React.createElement('input', {
-                type: 'text',
-                value: this.state.chatroom,
-                onChange: this.handleInputChange,
-                placeholder: '채팅방 이름'
-            }),
-            React.createElement(
-                'button',
-                { onClick: this.handleSearchClick },
-                '검색'
-            ),
-            this.state.chatroomExists !== null && React.createElement(
+            this.state.chatroomExists === true && React.createElement(
                 'div',
                 null,
-                this.state.chatroomExists ? React.createElement(
-                    'div',
+                React.createElement(
+                    'p',
                     null,
-                    React.createElement(
-                        'p',
-                        null,
-                        '채팅방이 존재합니다. 들어가시겠습니까?'
-                    ),
-                    React.createElement(
-                        'button',
-                        { onClick: this.handleJoinClick },
-                        'O'
-                    ),
-                    React.createElement(
-                        'button',
-                        { onClick: function () {
-                                return _this3.setState({ chatroomExists: null });
-                            } },
-                        'X'
-                    )
-                ) : React.createElement(
-                    'div',
+                    '채팅방이 존재합니다. 참여하시겠습니까?'
+                ),
+                React.createElement(
+                    'button',
+                    { onClick: this.handleJoin },
+                    '예'
+                )
+            ),
+            this.state.chatroomExists === false && React.createElement(
+                'div',
+                null,
+                React.createElement(
+                    'p',
                     null,
-                    React.createElement(
-                        'p',
-                        null,
-                        '채팅방이 존재하지 않습니다. 생성하시겠습니까?'
-                    ),
-                    React.createElement(
-                        'button',
-                        { onClick: this.handleCreateClick },
-                        'O'
-                    ),
-                    React.createElement(
-                        'button',
-                        { onClick: function () {
-                                return _this3.setState({ chatroomExists: null });
-                            } },
-                        'X'
-                    )
+                    '채팅방이 존재하지 않습니다. 생성하시겠습니까?'
+                ),
+                React.createElement(
+                    'button',
+                    { onClick: this.handleCreate },
+                    '예'
                 )
             )
         );
@@ -144,6 +118,7 @@ module.exports = ChatroomSearch;
 'use strict';
 
 var React = require('react');
+var socket = io.connect();
 var Login = require('./login.jsx');
 var ChatroomSearch = require('./ChatroomSearch.jsx');
 var Chatroom = require('./chatroom.jsx');
@@ -178,6 +153,12 @@ var Main = React.createClass({
         this.setState({ curPage: page });
     },
 
+    handleChangeUsername: function handleChangeUsername(newUsername) {
+        var oldUsername = this.state.username;
+        this.setState({ username: newUsername });
+        socket.emit('change:name', { oldName: oldUsername, newName: newUsername });
+    },
+
     render: function render() {
         return React.createElement(
             'div',
@@ -190,7 +171,7 @@ var Main = React.createClass({
                 React.createElement(ChatroomSearch, { onChatroomJoin: this.handleChatroomJoin }),
                 this.state.chatroomId && React.createElement(Chatroom, { username: this.state.username, chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName })
             ),
-            this.state.curPage === 'MyPage' && React.createElement(MyPage, { username: this.state.username }),
+            this.state.curPage === 'MyPage' && React.createElement(MyPage, { username: this.state.username, onChangeUsername: this.handleChangeUsername }),
             this.state.curPage === 'Register' && React.createElement(Register, { onRegisterSuccess: this.handleRegisterSuccess })
         );
     }
@@ -201,241 +182,227 @@ React.render(React.createElement(Main, null), document.getElementById('app'));
 },{"./ChatroomSearch.jsx":1,"./chatroom.jsx":3,"./login.jsx":4,"./mypage.jsx":5,"./register.jsx":6,"./sidebar.jsx":7,"react":163}],3:[function(require,module,exports){
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var React = require('react');
 var socket = io.connect();
 
 var UsersList = React.createClass({
-	displayName: 'UsersList',
+    displayName: 'UsersList',
 
-	render: function render() {
-		return React.createElement(
-			'div',
-			{ className: 'users' },
-			React.createElement(
-				'h3',
-				null,
-				' 참여자들 '
-			),
-			React.createElement(
-				'ul',
-				null,
-				this.props.users.map(function (user, i) {
-					return React.createElement(
-						'li',
-						{ key: i },
-						user
-					);
-				})
-			)
-		);
-	}
+    render: function render() {
+        return React.createElement(
+            'div',
+            { className: 'users' },
+            React.createElement(
+                'h3',
+                null,
+                ' 참여자들 '
+            ),
+            React.createElement(
+                'ul',
+                null,
+                this.props.users.map(function (user, i) {
+                    return React.createElement(
+                        'li',
+                        { key: i },
+                        user
+                    );
+                })
+            )
+        );
+    }
 });
 
 var Message = React.createClass({
-	displayName: 'Message',
+    displayName: 'Message',
 
-	render: function render() {
-		return React.createElement(
-			'div',
-			{ className: 'message' },
-			React.createElement(
-				'strong',
-				null,
-				this.props.user,
-				' :'
-			),
-			React.createElement(
-				'span',
-				null,
-				this.props.text
-			)
-		);
-	}
+    render: function render() {
+        return React.createElement(
+            'div',
+            { className: 'message' },
+            React.createElement(
+                'strong',
+                null,
+                this.props.user,
+                ' :'
+            ),
+            React.createElement(
+                'span',
+                null,
+                this.props.text
+            )
+        );
+    }
 });
 
 var MessageList = React.createClass({
-	displayName: 'MessageList',
+    displayName: 'MessageList',
 
-	render: function render() {
-		return React.createElement(
-			'div',
-			{ className: 'messages' },
-			React.createElement(
-				'h2',
-				null,
-				' 채팅방 '
-			),
-			this.props.messages.map(function (message, i) {
-				return React.createElement(Message, {
-					key: i,
-					user: message.user,
-					text: message.text
-				});
-			})
-		);
-	}
+    render: function render() {
+        return React.createElement(
+            'div',
+            { className: 'messages' },
+            React.createElement(
+                'h2',
+                null,
+                ' 채팅방 '
+            ),
+            this.props.messages.map(function (message, i) {
+                return React.createElement(Message, {
+                    key: i,
+                    user: message.user,
+                    text: message.text
+                });
+            })
+        );
+    }
 });
 
 var MessageForm = React.createClass({
-	displayName: 'MessageForm',
+    displayName: 'MessageForm',
 
-	getInitialState: function getInitialState() {
-		return { text: '' };
-	},
+    getInitialState: function getInitialState() {
+        return { text: '' };
+    },
 
-	handleSubmit: function handleSubmit(e) {
-		e.preventDefault();
-		var message = {
-			user: this.props.user,
-			text: this.state.text
-		};
-		this.props.onMessageSubmit(message);
-		this.setState({ text: '' });
-	},
+    handleSubmit: function handleSubmit(e) {
+        e.preventDefault();
+        var message = {
+            chatroomId: this.props.chatroomId,
+            user: this.props.user,
+            text: this.state.text
+        };
+        this.props.onMessageSubmit(message);
+        this.setState({ text: '' });
+    },
 
-	changeHandler: function changeHandler(e) {
-		this.setState({ text: e.target.value });
-	},
+    changeHandler: function changeHandler(e) {
+        this.setState({ text: e.target.value });
+    },
 
-	render: function render() {
-		return React.createElement(
-			'div',
-			{ className: 'message_form' },
-			React.createElement(
-				'form',
-				{ onSubmit: this.handleSubmit },
-				React.createElement('input', {
-					placeholder: '메시지 입력',
-					className: 'textinput',
-					onChange: this.changeHandler,
-					value: this.state.text
-				}),
-				React.createElement('h3', null)
-			)
-		);
-	}
-});
-
-var ChangeNameForm = React.createClass({
-	displayName: 'ChangeNameForm',
-
-	getInitialState: function getInitialState() {
-		return { newName: '' };
-	},
-
-	onKey: function onKey(e) {
-		this.setState({ newName: e.target.value });
-	},
-
-	handleSubmit: function handleSubmit(e) {
-		e.preventDefault();
-		var newName = this.state.newName;
-		this.props.onChangeName(newName);
-		this.setState({ newName: '' });
-	},
-
-	render: function render() {
-		return React.createElement(
-			'div',
-			{ className: 'change_name_form' },
-			React.createElement(
-				'h3',
-				null,
-				' 아이디 변경 '
-			),
-			React.createElement(
-				'form',
-				{ onSubmit: this.handleSubmit },
-				React.createElement('input', {
-					placeholder: '변경할 아이디 입력',
-					onChange: this.onKey,
-					value: this.state.newName
-				})
-			)
-		);
-	}
+    render: function render() {
+        return React.createElement(
+            'div',
+            { className: 'message_form' },
+            React.createElement(
+                'form',
+                { onSubmit: this.handleSubmit },
+                React.createElement('input', {
+                    placeholder: '메시지 입력',
+                    className: 'textinput',
+                    onChange: this.changeHandler,
+                    value: this.state.text
+                }),
+                React.createElement('h3', null)
+            )
+        );
+    }
 });
 
 var Chatroom = React.createClass({
-	displayName: 'Chatroom',
+    displayName: 'Chatroom',
 
-	getInitialState: function getInitialState() {
-		return { users: [], messages: [], text: '', chatroomId: this.props.chatroomId, chatroomName: this.props.chatroomName };
-	},
+    getInitialState: function getInitialState() {
+        return { users: [], messages: [], text: '', chatroomId: this.props.chatroomId, chatroomName: this.props.chatroomName };
+    },
 
-	componentDidMount: function componentDidMount() {
-		var _this = this;
+    componentDidMount: function componentDidMount() {
+        var _this = this;
 
-		socket.on('init', this._initialize);
-		socket.on('send:message', this._messageRecieve);
-		socket.on('user:join', this._userJoined);
-		socket.on('user:left', this._userLeft);
-		socket.on('change:name', this._userChangedName);
+        socket.on('init', this._initialize);
+        socket.on('send:message', this._messageRecieve);
+        socket.on('user:join', this._userJoined);
+        socket.on('user:left', this._userLeft);
+        socket.on('change:name', this._userChangedName);
+        socket.on('updateUsersList', this._updateUsersList);
 
-		if (this.state.chatroomId) {
-			socket.emit('join', { chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName, username: this.props.username });
-			fetch('/messages?chatroomId=' + this.state.chatroomId).then(function (response) {
-				return response.json();
-			}).then(function (messages) {
-				_this.setState({ messages: messages });
-			});
-		}
-	},
+        if (this.state.chatroomId) {
+            socket.emit('join', { chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName, username: this.props.username });
+            fetch('/messages?chatroomId=' + this.state.chatroomId).then(function (response) {
+                return response.json();
+            }).then(function (messages) {
+                _this.setState({ messages: messages });
+            });
+        }
+    },
 
-	_initialize: function _initialize(data) {
-		var users = data.users;
-		var name = data.name;
+    _initialize: function _initialize(data) {
+        var users = data.users;
+        var name = data.name;
 
-		this.setState({ users: users, user: name });
-	},
+        this.setState({ users: users, user: name });
+    },
 
-	_messageRecieve: function _messageRecieve(message) {
-		var messages = this.state.messages;
+    _messageRecieve: function _messageRecieve(message) {
+        var messages = this.state.messages;
 
-		messages.push(message);
-		this.setState({ messages: messages });
-	},
+        messages.push(message);
+        this.setState({ messages: messages });
+    },
 
-	handleMessageSubmit: function handleMessageSubmit(message) {
-		var messages = this.state.messages;
+    _userJoined: function _userJoined(username) {
+        var users = this.state.users;
 
-		messages.push(message);
-		this.setState({ messages: messages });
-		socket.emit('send:message', message);
-	},
+        users.push(username);
+        this.setState({ users: users });
+    },
 
-	handleChangeName: function handleChangeName(newName) {
-		var _this2 = this;
+    _userLeft: function _userLeft(username) {
+        var users = this.state.users;
 
-		var oldName = this.state.user;
-		socket.emit('change:name', { name: newName }, function (result) {
-			if (!result) {
-				return alert('There was an error changing your name');
-			}
-			var users = _this2.state.users;
+        var index = users.indexOf(username);
+        if (index !== -1) {
+            users.splice(index, 1);
+            this.setState({ users: users });
+        }
+    },
 
-			var index = users.indexOf(oldName);
-			users.splice(index, 1, newName);
-			_this2.setState({ users: users, user: newName });
-		});
-	},
+    _userChangedName: function _userChangedName(_ref) {
+        var oldName = _ref.oldName;
+        var newName = _ref.newName;
+        var _state = this.state;
+        var users = _state.users;
+        var messages = _state.messages;
 
-	render: function render() {
-		return React.createElement(
-			'div',
-			null,
-			React.createElement(UsersList, { users: this.state.users }),
-			React.createElement(ChangeNameForm, { onChangeName: this.handleChangeName }),
-			React.createElement(
-				'div',
-				{ className: 'chatroom_display' },
-				'현재 채팅방: ',
-				this.state.chatroomName
-			),
-			React.createElement(MessageList, { messages: this.state.messages }),
-			React.createElement(MessageForm, { onMessageSubmit: this.handleMessageSubmit, user: this.state.user })
-		);
-	}
+        var index = users.indexOf(oldName);
+        if (index !== -1) {
+            users[index] = newName;
+            this.setState({ users: users });
+        }
+        messages = messages.map(function (msg) {
+            return msg.user === oldName ? _extends({}, msg, { user: newName }) : msg;
+        });
+        this.setState({ messages: messages });
+    },
+
+    _updateUsersList: function _updateUsersList(users) {
+        this.setState({ users: users });
+    },
+
+    handleMessageSubmit: function handleMessageSubmit(message) {
+        var messages = this.state.messages;
+
+        messages.push(message);
+        this.setState({ messages: messages });
+        socket.emit('send:message', message);
+    },
+
+    render: function render() {
+        return React.createElement(
+            'div',
+            null,
+            React.createElement(UsersList, { users: this.state.users }),
+            React.createElement(
+                'div',
+                { className: 'chatroom_display' },
+                '현재 채팅방: ',
+                this.state.chatroomName
+            ),
+            React.createElement(MessageList, { messages: this.state.messages }),
+            React.createElement(MessageForm, { onMessageSubmit: this.handleMessageSubmit, user: this.props.username, chatroomId: this.state.chatroomId })
+        );
+    }
 });
 
 module.exports = Chatroom;
@@ -540,6 +507,7 @@ module.exports = Login;
 'use strict';
 
 var React = require('react');
+var socket = io.connect();
 
 var MyPage = React.createClass({
     displayName: 'MyPage',
@@ -568,6 +536,8 @@ var MyPage = React.createClass({
             return response.json();
         }).then(function (data) {
             if (data.success) {
+                _this.props.onChangeUsername(newName); // 부모 컴포넌트의 상태를 업데이트합니다.
+                socket.emit('change:name', { oldName: _this.state.username, newName: newName });
                 _this.setState({ username: newName, newName: '' });
                 alert('아이디가 변경되었습니다.');
             } else {
@@ -618,8 +588,7 @@ var Register = React.createClass({
     getInitialState: function getInitialState() {
         return {
             username: '',
-            password: '',
-            confirmPassword: ''
+            password: ''
         };
     },
 
@@ -637,12 +606,6 @@ var Register = React.createClass({
         var _state = this.state;
         var username = _state.username;
         var password = _state.password;
-        var confirmPassword = _state.confirmPassword;
-
-        if (password !== confirmPassword) {
-            alert('비밀번호가 일치하지않습니다!😡');
-            return;
-        }
 
         fetch('/register', {
             method: 'POST',
@@ -654,10 +617,10 @@ var Register = React.createClass({
             return response.json();
         }).then(function (data) {
             if (data.success) {
-                alert('회원가입을 축하합니다.👏🏻👏🏻👏🏻');
                 _this.props.onRegisterSuccess();
+                alert('회원가입 성공');
             } else {
-                alert('Registration failed: ' + data.message);
+                alert('회원가입 실패: ' + data.message);
             }
         });
     },
@@ -669,7 +632,7 @@ var Register = React.createClass({
             React.createElement(
                 'h1',
                 null,
-                '회원가입 테스트^^'
+                '회원가입'
             ),
             React.createElement('input', {
                 type: 'text',
@@ -684,13 +647,6 @@ var Register = React.createClass({
                 value: this.state.password,
                 onChange: this.handleInputChange,
                 placeholder: '비밀번호'
-            }),
-            React.createElement('input', {
-                type: 'password',
-                name: 'confirmPassword',
-                value: this.state.confirmPassword,
-                onChange: this.handleInputChange,
-                placeholder: '비밀번호 확인'
             }),
             React.createElement(
                 'button',
@@ -711,7 +667,7 @@ var React = require('react');
 var Sidebar = React.createClass({
     displayName: 'Sidebar',
 
-    handleNavigation: function handleNavigation(page) {
+    handleNavigate: function handleNavigate(page) {
         this.props.onNavigate(page);
     },
 
@@ -724,14 +680,14 @@ var Sidebar = React.createClass({
             React.createElement(
                 'button',
                 { onClick: function () {
-                        return _this.handleNavigation('ChatApp');
+                        return _this.handleNavigate('ChatApp');
                     } },
                 '채팅'
             ),
             React.createElement(
                 'button',
                 { onClick: function () {
-                        return _this.handleNavigation('MyPage');
+                        return _this.handleNavigate('MyPage');
                     } },
                 '마이페이지'
             )

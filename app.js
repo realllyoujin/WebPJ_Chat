@@ -7,7 +7,7 @@
 var express = require('express');
 var http = require('http');
 
-var socket = require('./routes/socket.js');
+var socketHandler = require('./routes/socket.js');
 
 var app = express();
 var server = http.createServer(app);
@@ -109,11 +109,10 @@ app.post('/change-name', (req, res) => {
                 throw err;
             }
         } else {
-            res.json({ success: true });
+            res.json({ success: true, newName });
         }
     });
 });
-
 
 /* Configuration */
 app.set('views', __dirname + '/views');
@@ -121,38 +120,18 @@ app.use(express.static(__dirname + '/public'));
 app.set('port', 3000);
 
 if (process.env.NODE_ENV === 'development') {
-	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 }
 
 /* Socket.io Communication */
 var io = require('socket.io').listen(server);
 io.sockets.on('connection', (socket) => {
-    socket.on('join', ({ chatroomId, chatroomName, username }) => {
-        socket.join(chatroomId);
-        socket.chatroomId = chatroomId;
-        socket.chatroomName = chatroomName;
-        socket.username = username;
-        io.to(chatroomId).emit('user:join', username);
-
-        socket.on('send:message', (message) => {
-            const { text } = message;
-            const query = 'INSERT INTO messages (chatroom_id, username, message) VALUES (?, ?, ?)';
-            db.query(query, [chatroomId, username, text], (err) => {
-                if (err) throw err;
-                io.to(chatroomId).emit('send:message', { user: username, text });
-            });
-        });
-
-        socket.on('disconnect', () => {
-            io.to(chatroomId).emit('user:left', username);
-        });
-    });
+    socketHandler(io, socket);
 });
 
-
 /* Start server */
-server.listen(app.get('port'), function (){
-  console.log('Express server listening on port %d in %s mode', app.get('port'), app.get('env'));
+server.listen(app.get('port'), function () {
+    console.log('Express server listening on port %d in %s mode', app.get('port'), app.get('env'));
 });
 
 module.exports = app;
