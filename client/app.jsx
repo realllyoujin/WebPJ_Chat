@@ -10,7 +10,7 @@ var Main = React.createClass({
 
 	//페이지 시작했을때 초기상태
 	getInitialState() {
-		return { curPage: 'Login', username: '', chatroomId: null };
+		return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '' };
 	},
 
 	handleLoginSuccess(username) {
@@ -25,8 +25,8 @@ var Main = React.createClass({
 		this.setState({ curPage: 'Login' });
 	},
 
-	handleChatroomJoin(chatroomId) {
-		this.setState({ chatroomId });
+	handleChatroomJoin(chatroomId, chatroomName) {
+		this.setState({ chatroomId, chatroomName });
 	},
 
 	render() {
@@ -36,7 +36,7 @@ var Main = React.createClass({
 				{ this.state.curPage === 'ChatApp' &&
 					<div>
 						<ChatroomSearch onChatroomJoin={this.handleChatroomJoin} />
-						{ this.state.chatroomId && <Chatroom username={this.state.username} chatroomId={this.state.chatroomId} /> }
+						{ this.state.chatroomId && <Chatroom username={this.state.username} chatroomId={this.state.chatroomId} chatroomName={this.state.chatroomName} /> }
 					</div>
 				}
 				{ this.state.curPage === 'Register' && <Register onRegisterSuccess={this.handleRegisterSuccess} /> }

@@ -128,7 +128,7 @@ var ChangeNameForm = React.createClass({
 var Chatroom = React.createClass({
 
 	getInitialState() {
-		return {users: [], messages:[], text: '', chatroomId: this.props.chatroomId};
+		return {users: [], messages:[], text: '', chatroomId: this.props.chatroomId, chatroomName: this.props.chatroomName};
 	},
 
 	componentDidMount() {
@@ -139,7 +139,7 @@ var Chatroom = React.createClass({
 		socket.on('change:name', this._userChangedName);
 
 		if (this.state.chatroomId) {
-			socket.emit('join', { chatroomId: this.state.chatroomId, username: this.props.username });
+			socket.emit('join', { chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName, username: this.props.username });
 			fetch(`/messages?chatroomId=${this.state.chatroomId}`)
 				.then(response => response.json())
 				.then(messages => {
@@ -184,7 +184,7 @@ var Chatroom = React.createClass({
 			<div>
 				<UsersList users={this.state.users} />
 				<ChangeNameForm onChangeName={this.handleChangeName} />
-				<div className='chatroom_display'>현재 채팅방: {this.state.chatroomId}</div>
+				<div className='chatroom_display'>현재 채팅방: {this.state.chatroomName}</div>
 				<MessageList messages={this.state.messages} />
 				<MessageForm onMessageSubmit={this.handleMessageSubmit} user={this.state.user} />
 			</div>

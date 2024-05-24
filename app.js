@@ -83,7 +83,7 @@ app.post('/chatroom/create', (req, res) => {
     const insertQuery = 'INSERT INTO chatrooms (name) VALUES (?)';
     db.query(insertQuery, [chatroom], (err, result) => {
         if (err) throw err;
-        res.json({ success: true, chatroomId: result.insertId });
+        res.json({ success: true, chatroomId: result.insertId, chatroomName: chatroom });
     });
 });
 
@@ -109,9 +109,10 @@ if (process.env.NODE_ENV === 'development') {
 /* Socket.io Communication */
 var io = require('socket.io').listen(server);
 io.sockets.on('connection', (socket) => {
-    socket.on('join', ({ chatroomId, username }) => {
+    socket.on('join', ({ chatroomId, chatroomName, username }) => {
         socket.join(chatroomId);
         socket.chatroomId = chatroomId;
+        socket.chatroomName = chatroomName;
         socket.username = username;
         io.to(chatroomId).emit('user:join', username);
 

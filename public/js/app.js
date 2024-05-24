@@ -10,7 +10,8 @@ var ChatroomSearch = React.createClass({
         return {
             chatroom: '',
             chatroomExists: null,
-            chatroomId: null
+            chatroomId: null,
+            chatroomName: ''
         };
     },
 
@@ -33,7 +34,7 @@ var ChatroomSearch = React.createClass({
             return response.json();
         }).then(function (data) {
             if (data.exists) {
-                _this.setState({ chatroomExists: true, chatroomId: data.chatroomId });
+                _this.setState({ chatroomExists: true, chatroomId: data.chatroomId, chatroomName: data.chatroomName });
             } else {
                 _this.setState({ chatroomExists: false });
             }
@@ -41,7 +42,7 @@ var ChatroomSearch = React.createClass({
     },
 
     handleJoinClick: function handleJoinClick() {
-        this.props.onChatroomJoin(this.state.chatroomId);
+        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
     },
 
     handleCreateClick: function handleCreateClick() {
@@ -59,7 +60,7 @@ var ChatroomSearch = React.createClass({
             return response.json();
         }).then(function (data) {
             if (data.success) {
-                _this2.props.onChatroomJoin(data.chatroomId);
+                _this2.props.onChatroomJoin(data.chatroomId, data.chatroomName);
             } else {
                 alert('Error creating chatroom');
             }
@@ -153,7 +154,7 @@ var Main = React.createClass({
 
 	//페이지 시작했을때 초기상태
 	getInitialState: function getInitialState() {
-		return { curPage: 'Login', username: '', chatroomId: null };
+		return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '' };
 	},
 
 	handleLoginSuccess: function handleLoginSuccess(username) {
@@ -168,8 +169,8 @@ var Main = React.createClass({
 		this.setState({ curPage: 'Login' });
 	},
 
-	handleChatroomJoin: function handleChatroomJoin(chatroomId) {
-		this.setState({ chatroomId: chatroomId });
+	handleChatroomJoin: function handleChatroomJoin(chatroomId, chatroomName) {
+		this.setState({ chatroomId: chatroomId, chatroomName: chatroomName });
 	},
 
 	render: function render() {
@@ -181,7 +182,7 @@ var Main = React.createClass({
 				'div',
 				null,
 				React.createElement(ChatroomSearch, { onChatroomJoin: this.handleChatroomJoin }),
-				this.state.chatroomId && React.createElement(Chatroom, { username: this.state.username, chatroomId: this.state.chatroomId })
+				this.state.chatroomId && React.createElement(Chatroom, { username: this.state.username, chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName })
 			),
 			this.state.curPage === 'Register' && React.createElement(Register, { onRegisterSuccess: this.handleRegisterSuccess })
 		);
@@ -353,7 +354,7 @@ var Chatroom = React.createClass({
 	displayName: 'Chatroom',
 
 	getInitialState: function getInitialState() {
-		return { users: [], messages: [], text: '', chatroomId: this.props.chatroomId };
+		return { users: [], messages: [], text: '', chatroomId: this.props.chatroomId, chatroomName: this.props.chatroomName };
 	},
 
 	componentDidMount: function componentDidMount() {
@@ -366,7 +367,7 @@ var Chatroom = React.createClass({
 		socket.on('change:name', this._userChangedName);
 
 		if (this.state.chatroomId) {
-			socket.emit('join', { chatroomId: this.state.chatroomId, username: this.props.username });
+			socket.emit('join', { chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName, username: this.props.username });
 			fetch('/messages?chatroomId=' + this.state.chatroomId).then(function (response) {
 				return response.json();
 			}).then(function (messages) {
@@ -423,7 +424,7 @@ var Chatroom = React.createClass({
 				'div',
 				{ className: 'chatroom_display' },
 				'현재 채팅방: ',
-				this.state.chatroomId
+				this.state.chatroomName
 			),
 			React.createElement(MessageList, { messages: this.state.messages }),
 			React.createElement(MessageForm, { onMessageSubmit: this.handleMessageSubmit, user: this.state.user })

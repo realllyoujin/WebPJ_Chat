@@ -7,7 +7,8 @@ var ChatroomSearch = React.createClass({
         return { 
             chatroom: '', 
             chatroomExists: null, 
-            chatroomId: null 
+            chatroomId: null,
+            chatroomName: ''
         };
     },
 
@@ -28,7 +29,7 @@ var ChatroomSearch = React.createClass({
         .then(response => response.json())
         .then(data => {
             if (data.exists) {
-                this.setState({ chatroomExists: true, chatroomId: data.chatroomId });
+                this.setState({ chatroomExists: true, chatroomId: data.chatroomId, chatroomName: data.chatroomName });
             } else {
                 this.setState({ chatroomExists: false });
             }
@@ -36,7 +37,7 @@ var ChatroomSearch = React.createClass({
     },
 
     handleJoinClick() {
-        this.props.onChatroomJoin(this.state.chatroomId);
+        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
     },
 
     handleCreateClick() {
@@ -52,7 +53,7 @@ var ChatroomSearch = React.createClass({
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.props.onChatroomJoin(data.chatroomId);
+                this.props.onChatroomJoin(data.chatroomId, data.chatroomName);
             } else {
                 alert('Error creating chatroom');
             }
