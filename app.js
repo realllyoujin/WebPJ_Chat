@@ -62,7 +62,7 @@ app.post('/register', (req, res) => {
     });
 });
 
-app.post('/chatroom', (req, res) => {
+app.post('/chatroom/check', (req, res) => {
     const { chatroom } = req.body;
 
     const query = 'SELECT * FROM chatrooms WHERE name = ?';
@@ -70,14 +70,20 @@ app.post('/chatroom', (req, res) => {
         if (err) throw err;
 
         if (results.length > 0) {
-            res.json({ success: true, chatroomId: results[0].id });
+            res.json({ exists: true, chatroomId: results[0].id, chatroomName: results[0].name });
         } else {
-            const insertQuery = 'INSERT INTO chatrooms (name) VALUES (?)';
-            db.query(insertQuery, [chatroom], (err, result) => {
-                if (err) throw err;
-                res.json({ success: true, chatroomId: result.insertId });
-            });
+            res.json({ exists: false });
         }
+    });
+});
+
+app.post('/chatroom/create', (req, res) => {
+    const { chatroom } = req.body;
+
+    const insertQuery = 'INSERT INTO chatrooms (name) VALUES (?)';
+    db.query(insertQuery, [chatroom], (err, result) => {
+        if (err) throw err;
+        res.json({ success: true, chatroomId: result.insertId });
     });
 });
 

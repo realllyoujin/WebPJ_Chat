@@ -1,10 +1,9 @@
 'use strict';
 
 var React = require('react');
-
-var socket = io.connect();
 var Login = require('./login.jsx');
-var ChatApp = require('./chatapp.jsx');
+var ChatroomSearch = require('./ChatroomSearch.jsx');
+var Chatroom = require('./chatroom.jsx');
 var Register = require('./register.jsx');
 
 var Main = React.createClass({
@@ -33,16 +32,18 @@ var Main = React.createClass({
 	render() {
 		return(
 			<div>
-			<div>
-			{ this.state.curPage === 'Login' && <Login onLoginSuccess={this.handleLoginSuccess} handleRouteRegister={this.handleRouteRegister}/>}
-			{ this.state.curPage === 'ChatApp' && <ChatApp username={this.state.username} chatroomId={this.state.chatroomId} onChatroomJoin={this.handleChatroomJoin} />}
-			{ this.state.curPage === 'Register' && <Register onRegisterSuccess={this.handleRegisterSuccess} />}
-			</div>	
+				{ this.state.curPage === 'Login' && <Login onLoginSuccess={this.handleLoginSuccess} handleRouteRegister={this.handleRouteRegister}/> }
+				{ this.state.curPage === 'ChatApp' &&
+					<div>
+						<ChatroomSearch onChatroomJoin={this.handleChatroomJoin} />
+						{ this.state.chatroomId && <Chatroom username={this.state.username} chatroomId={this.state.chatroomId} /> }
+					</div>
+				}
+				{ this.state.curPage === 'Register' && <Register onRegisterSuccess={this.handleRegisterSuccess} /> }
 			</div>
 		);
 	}
 
 });
-
 
 React.render(<Main/>, document.getElementById('app'));
