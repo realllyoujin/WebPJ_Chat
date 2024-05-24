@@ -97,6 +97,24 @@ app.get('/messages', (req, res) => {
     });
 });
 
+app.post('/change-name', (req, res) => {
+    const { username, newName } = req.body;
+
+    const query = 'UPDATE users SET username = ? WHERE username = ?';
+    db.query(query, [newName, username], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                res.json({ success: false, message: 'User already exists' });
+            } else {
+                throw err;
+            }
+        } else {
+            res.json({ success: true });
+        }
+    });
+});
+
+
 /* Configuration */
 app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
@@ -130,6 +148,7 @@ io.sockets.on('connection', (socket) => {
         });
     });
 });
+
 
 /* Start server */
 server.listen(app.get('port'), function (){
