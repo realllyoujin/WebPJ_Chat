@@ -90,10 +90,14 @@ app.post('/chatroom/create', (req, res) => {
 app.get('/messages', (req, res) => {
     const { chatroomId } = req.query;
 
-    const query = 'SELECT * FROM messages WHERE chatroom_id = ?';
+    const query = 'SELECT username, message, timestamp FROM messages WHERE chatroom_id = ?';
     db.query(query, [chatroomId], (err, results) => {
         if (err) throw err;
-        res.json(results);
+        res.json(results.map(row => ({
+            username: row.username,
+            message: row.message,
+            timestamp: row.timestamp
+        })));
     });
 });
 

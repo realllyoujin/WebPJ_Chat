@@ -218,6 +218,7 @@ var Message = React.createClass({
     displayName: 'Message',
 
     render: function render() {
+        var time = new Date(this.props.timestamp).toLocaleTimeString();
         return React.createElement(
             'div',
             { className: 'message' },
@@ -231,6 +232,11 @@ var Message = React.createClass({
                 'span',
                 null,
                 this.props.text
+            ),
+            React.createElement(
+                'div',
+                { className: 'timestamp' },
+                time
             )
         );
     }
@@ -251,8 +257,9 @@ var MessageList = React.createClass({
             this.props.messages.map(function (message, i) {
                 return React.createElement(Message, {
                     key: i,
-                    user: message.user,
-                    text: message.text
+                    user: message.username,
+                    text: message.message,
+                    timestamp: message.timestamp
                 });
             })
         );
@@ -273,7 +280,7 @@ var MessageForm = React.createClass({
             user: this.props.user,
             text: this.state.text
         };
-        this.props.onMessageSubmit(message);
+        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
         this.setState({ text: '' });
     },
 
@@ -344,8 +351,10 @@ var Chatroom = React.createClass({
     _userJoined: function _userJoined(username) {
         var users = this.state.users;
 
-        users.push(username);
-        this.setState({ users: users });
+        if (!users.includes(username)) {
+            users.push(username);
+            this.setState({ users: users });
+        }
     },
 
     _userLeft: function _userLeft(username) {
@@ -371,7 +380,7 @@ var Chatroom = React.createClass({
             this.setState({ users: users });
         }
         messages = messages.map(function (msg) {
-            return msg.user === oldName ? _extends({}, msg, { user: newName }) : msg;
+            return msg.username === oldName ? _extends({}, msg, { username: newName }) : msg;
         });
         this.setState({ messages: messages });
     },
@@ -381,11 +390,7 @@ var Chatroom = React.createClass({
     },
 
     handleMessageSubmit: function handleMessageSubmit(message) {
-        var messages = this.state.messages;
-
-        messages.push(message);
-        this.setState({ messages: messages });
-        socket.emit('send:message', message);
+        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
     },
 
     render: function render() {

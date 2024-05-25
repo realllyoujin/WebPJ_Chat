@@ -60,8 +60,6 @@ module.exports = function (io, socket) {
             socket.chatroomId = chatroomId;
             socket.chatroomName = chatroomName;
             socket.username = username;
-            io.to(chatroomId).emit('user:join', username);
-            io.to(chatroomId).emit('updateUsersList', userNames.get());
 
             // send the new user their name and a list of users
             socket.emit('init', {
@@ -73,6 +71,8 @@ module.exports = function (io, socket) {
             socket.broadcast.to(chatroomId).emit('user:join', {
                 name: username
             });
+            
+            io.to(chatroomId).emit('updateUsersList', userNames.get());
         } else {
             socket.emit('usernameExists', { message: 'Username already exists' });
         }
@@ -81,14 +81,19 @@ module.exports = function (io, socket) {
     // broadcast a user's message to other users
     socket.on('send:message', function (data) {
         const { chatroomId, text } = data;
-        socket.broadcast.to(chatroomId).emit('send:message', {
-            user: username,
-            text: text
-        });
+        const timestamp = new Date();
+
+        const messageData = {
+            username: username,
+            message: text,
+            timestamp: timestamp
+        };
+
+        io.to(chatroomId).emit('send:message', messageData);
 
         // 메시지 DB에 저장
-        const query = 'INSERT INTO messages (chatroom_id, username, message) VALUES (?, ?, ?)';
-        db.query(query, [chatroomId, username, text], (err, results) => {
+        const query = 'INSERT INTO messages (chatroom_id, username, message, timestamp) VALUES (?, ?, ?, ?)';
+        db.query(query, [chatroomId, username, text, timestamp], (err, results) => {
             if (err) throw err;
         });
     });
