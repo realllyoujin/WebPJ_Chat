@@ -511,6 +511,8 @@ module.exports = Login;
 },{"react":163}],5:[function(require,module,exports){
 'use strict';
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var React = require('react');
 var socket = io.connect();
 
@@ -518,36 +520,34 @@ var MyPage = React.createClass({
     displayName: 'MyPage',
 
     getInitialState: function getInitialState() {
-        return { newName: '', username: this.props.username };
+        return { newName: '', newPassword: '', username: this.props.username };
     },
 
     onKey: function onKey(e) {
-        this.setState({ newName: e.target.value });
+        this.setState(_defineProperty({}, e.target.name, e.target.value));
     },
 
     handleSubmit: function handleSubmit(e) {
-        var _this = this;
-
         e.preventDefault();
-        var newName = this.state.newName;
+        var _state = this.state;
+        var newName = _state.newName;
+        var newPassword = _state.newPassword;
 
-        fetch('/change-name', {
+        fetch('/change-credentials', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username: this.state.username, newName: newName })
+            body: JSON.stringify({ username: this.state.username, newName: newName, newPassword: newPassword })
         }).then(function (response) {
             return response.json();
         }).then(function (data) {
             if (data.success) {
-                _this.props.onChangeUsername(newName); // 부모 컴포넌트의 상태를 업데이트합니다.
-                socket.emit('change:name', { oldName: _this.state.username, newName: newName });
-                _this.setState({ username: newName, newName: '' });
-                alert('아이디가 변경되었습니다.');
+                alert('아이디와 비밀번호가 변경되었습니다.');
+                window.location.reload(); // 새로고침하여 로그아웃 처리
             } else {
-                alert('아이디 변경에 실패했습니다.');
-            }
+                    alert('변경에 실패했습니다: ' + data.message);
+                }
         });
     },
 
@@ -558,15 +558,23 @@ var MyPage = React.createClass({
             React.createElement(
                 'h3',
                 null,
-                '아이디 변경'
+                '아이디 및 비밀번호 변경'
             ),
             React.createElement(
                 'form',
                 { onSubmit: this.handleSubmit },
                 React.createElement('input', {
                     placeholder: '변경할 아이디 입력',
+                    name: 'newName',
                     onChange: this.onKey,
                     value: this.state.newName
+                }),
+                React.createElement('input', {
+                    type: 'password',
+                    placeholder: '변경할 비밀번호 입력',
+                    name: 'newPassword',
+                    onChange: this.onKey,
+                    value: this.state.newPassword
                 }),
                 React.createElement(
                     'button',

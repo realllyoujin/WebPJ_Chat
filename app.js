@@ -101,19 +101,26 @@ app.get('/messages', (req, res) => {
     });
 });
 
-app.post('/change-name', (req, res) => {
-    const { username, newName } = req.body;
+app.post('/change-credentials', (req, res) => {
+    const { username, newName, newPassword } = req.body;
 
-    const query = 'UPDATE users SET username = ? WHERE username = ?';
-    db.query(query, [newName, username], (err, result) => {
-        if (err) {
-            if (err.code === 'ER_DUP_ENTRY') {
-                res.json({ success: false, message: 'User already exists' });
-            } else {
-                throw err;
-            }
+    // Check if the new username already exists
+    const checkQuery = 'SELECT * FROM users WHERE username = ?';
+    db.query(checkQuery, [newName], (err, results) => {
+        if (err) throw err;
+
+        if (results.length > 0) {
+            res.json({ success: false, message: 'User already exists' });
         } else {
-            res.json({ success: true, newName });
+            // Proceed with updating the username and password
+            const query = 'UPDATE users SET username = ?, password = ? WHERE username = ?';
+            db.query(query, [newName, newPassword, username], (err, result) => {
+                if (err) {
+                    throw err;
+                } else {
+                    res.json({ success: true, newName });
+                }
+            });
         }
     });
 });
