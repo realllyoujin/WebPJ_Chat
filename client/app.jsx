@@ -12,7 +12,7 @@ var Sidebar = require('./sidebar.jsx');
 var Main = React.createClass({
 
     getInitialState() {
-        return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '' };
+        return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '', showSearch: false, showChatroom: false, chatroomKey: 0 };
     },
 
     handleLoginSuccess(username) {
@@ -28,11 +28,24 @@ var Main = React.createClass({
     },
 
     handleChatroomJoin(chatroomId, chatroomName) {
-        this.setState({ chatroomId, chatroomName });
+        if (this.state.chatroomId) {
+            socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.state.username });
+        }
+        this.setState({ chatroomId, chatroomName, showSearch: false, showChatroom: true, chatroomKey: this.state.chatroomKey + 1 }, () => {
+            socket.emit('join', { chatroomId, chatroomName, username: this.state.username });
+        });
     },
 
     handleNavigation(page) {
-        this.setState({ curPage: page });
+        if (page === 'ChatroomSearch') {
+            if (this.state.chatroomId) {
+                socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.state.username });
+                this.setState({ chatroomId: null, chatroomName: '', showChatroom: false });
+            }
+            this.setState({ showSearch: true, curPage: 'ChatApp' });
+        } else {
+            this.setState({ curPage: page, showSearch: false, showChatroom: false });
+        }
     },
 
     handleChangeUsername(newUsername) {
@@ -48,11 +61,11 @@ var Main = React.createClass({
                 { this.state.curPage !== 'Login' && this.state.curPage !== 'Register' &&
                     <Sidebar onNavigate={this.handleNavigation} />
                 }
-                { this.state.curPage === 'ChatApp' &&
-                    <div>
-                        <ChatroomSearch onChatroomJoin={this.handleChatroomJoin} />
-                        { this.state.chatroomId && <Chatroom username={this.state.username} chatroomId={this.state.chatroomId} chatroomName={this.state.chatroomName} /> }
-                    </div>
+                { this.state.curPage === 'ChatApp' && this.state.showSearch &&
+                    <ChatroomSearch onChatroomJoin={this.handleChatroomJoin} />
+                }
+                { this.state.curPage === 'ChatApp' && this.state.showChatroom &&
+                    <Chatroom key={this.state.chatroomKey} username={this.state.username} chatroomId={this.state.chatroomId} chatroomName={this.state.chatroomName} />
                 }
                 { this.state.curPage === 'MyPage' && 
                     <MyPage username={this.state.username} onChangeUsername={this.handleChangeUsername} />

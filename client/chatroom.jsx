@@ -72,7 +72,7 @@ var MessageForm = React.createClass({
             user: this.props.user,
             text: this.state.text
         };
-        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
+        socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
         this.setState({ text: '' });
     },
 
@@ -121,6 +121,18 @@ var Chatroom = React.createClass({
         }
     },
 
+    componentWillUnmount() {
+        if (this.state.chatroomId) {
+            socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.props.username });
+        }
+        socket.off('init', this._initialize);
+        socket.off('send:message', this._messageRecieve);
+        socket.off('user:join', this._userJoined);
+        socket.off('user:left', this._userLeft);
+        socket.off('change:name', this._userChangedName);
+        socket.off('updateUsersList', this._updateUsersList);
+    },
+
     _initialize(data) {
         var { users, name } = data;
         this.setState({ users, user: name });
@@ -165,7 +177,7 @@ var Chatroom = React.createClass({
     },
 
     handleMessageSubmit(message) {
-        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
+        socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
     },
 
     render() {

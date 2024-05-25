@@ -12,7 +12,6 @@ db.connect((err) => {
     console.log('Connected to database');
 });
 
-// Keep track of which names are used so that there are no duplicates
 var userNames = (function () {
     var names = {};
 
@@ -25,7 +24,6 @@ var userNames = (function () {
         }
     };
 
-    // serialize claimed names as an array
     var get = function () {
         var res = [];
         for (var user in names) {
@@ -48,11 +46,9 @@ var userNames = (function () {
     };
 }());
 
-// export function for listening to the socket
 module.exports = function (io, socket) {
     var username;
 
-    // Join chatroom event
     socket.on('join', ({ chatroomId, chatroomName, username: user }) => {
         username = user;
         if (userNames.claim(username)) {
@@ -61,24 +57,21 @@ module.exports = function (io, socket) {
             socket.chatroomName = chatroomName;
             socket.username = username;
 
-            // send the new user their name and a list of users
             socket.emit('init', {
                 name: username,
                 users: userNames.get()
             });
 
-            // notify other clients that a new user has joined
             socket.broadcast.to(chatroomId).emit('user:join', {
                 name: username
             });
-            
+
             io.to(chatroomId).emit('updateUsersList', userNames.get());
         } else {
             socket.emit('usernameExists', { message: 'Username already exists' });
         }
     });
 
-    // broadcast a user's message to other users
     socket.on('send:message', function (data) {
         const { chatroomId, text } = data;
         const timestamp = new Date();
@@ -91,14 +84,12 @@ module.exports = function (io, socket) {
 
         io.to(chatroomId).emit('send:message', messageData);
 
-        // 메시지 DB에 저장
         const query = 'INSERT INTO messages (chatroom_id, username, message, timestamp) VALUES (?, ?, ?, ?)';
         db.query(query, [chatroomId, username, text, timestamp], (err, results) => {
             if (err) throw err;
         });
     });
 
-    // validate a user's name change, and broadcast it on success
     socket.on('change:name', function (data, fn) {
         if (userNames.claim(data.newName)) {
             var oldName = username;
@@ -121,12 +112,22 @@ module.exports = function (io, socket) {
         }
     });
 
-    // clean up when a user leaves, and broadcast it to other users
-    socket.on('disconnect', function () {
-        socket.broadcast.to(socket.chatroomId).emit('user:left', {
-            name: username
+    socket.on('leave', function (data) {
+        socket.leave(data.chatroomId);
+        socket.broadcast.to(data.chatroomId).emit('user:left', {
+            name: data.username
         });
-        userNames.free(username);
-        io.to(socket.chatroomId).emit('updateUsersList', userNames.get());
+        userNames.free(data.username);
+        io.to(data.chatroomId).emit('updateUsersList', userNames.get());
+    });
+
+    socket.on('disconnect', function () {
+        if (socket.chatroomId) {
+            socket.broadcast.to(socket.chatroomId).emit('user:left', {
+                name: username
+            });
+            userNames.free(username);
+            io.to(socket.chatroomId).emit('updateUsersList', userNames.get());
+        }
     });
 };

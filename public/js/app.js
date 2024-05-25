@@ -7,58 +7,45 @@ var ChatroomSearch = React.createClass({
     displayName: 'ChatroomSearch',
 
     getInitialState: function getInitialState() {
-        return { chatroom: '', chatroomExists: null };
+        return { chatroom: '' };
     },
 
     handleChange: function handleChange(e) {
         this.setState({ chatroom: e.target.value });
     },
 
-    handleSearch: function handleSearch(e) {
+    handleSearch: function handleSearch() {
         var _this = this;
 
-        e.preventDefault();
+        var chatroom = this.state.chatroom;
+
         fetch('/chatroom/check', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ chatroom: this.state.chatroom })
+            body: JSON.stringify({ chatroom: chatroom })
         }).then(function (response) {
             return response.json();
         }).then(function (data) {
             if (data.exists) {
-                _this.setState({ chatroomExists: true, chatroomId: data.chatroomId, chatroomName: data.chatroomName });
+                _this.props.onChatroomJoin(data.chatroomId, data.chatroomName);
             } else {
-                _this.setState({ chatroomExists: false });
+                if (window.confirm('채팅방이 없습니다. 생성하시겠습니까?')) {
+                    fetch('/chatroom/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ chatroom: chatroom })
+                    }).then(function (response) {
+                        return response.json();
+                    }).then(function (data) {
+                        _this.props.onChatroomJoin(data.chatroomId, data.chatroomName);
+                    });
+                }
             }
         });
-    },
-
-    handleCreate: function handleCreate(e) {
-        var _this2 = this;
-
-        e.preventDefault();
-        fetch('/chatroom/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chatroom: this.state.chatroom })
-        }).then(function (response) {
-            return response.json();
-        }).then(function (data) {
-            if (data.success) {
-                _this2.props.onChatroomJoin(data.chatroomId, _this2.state.chatroom);
-            } else {
-                alert('채팅방 생성에 실패했습니다.');
-            }
-        });
-    },
-
-    handleJoin: function handleJoin(e) {
-        e.preventDefault();
-        this.props.onChatroomJoin(this.state.chatroomId, this.state.chatroomName);
     },
 
     render: function render() {
@@ -66,47 +53,20 @@ var ChatroomSearch = React.createClass({
             'div',
             { className: 'chatroom_search' },
             React.createElement(
-                'form',
-                { onSubmit: this.handleSearch },
-                React.createElement('input', {
-                    type: 'text',
-                    placeholder: '채팅방 이름',
-                    value: this.state.chatroom,
-                    onChange: this.handleChange
-                }),
-                React.createElement(
-                    'button',
-                    { type: 'submit' },
-                    '검색'
-                )
-            ),
-            this.state.chatroomExists === true && React.createElement(
-                'div',
+                'h3',
                 null,
-                React.createElement(
-                    'p',
-                    null,
-                    '채팅방이 존재합니다. 참여하시겠습니까?'
-                ),
-                React.createElement(
-                    'button',
-                    { onClick: this.handleJoin },
-                    '예'
-                )
+                '채팅방 검색'
             ),
-            this.state.chatroomExists === false && React.createElement(
-                'div',
-                null,
-                React.createElement(
-                    'p',
-                    null,
-                    '채팅방이 존재하지 않습니다. 생성하시겠습니까?'
-                ),
-                React.createElement(
-                    'button',
-                    { onClick: this.handleCreate },
-                    '예'
-                )
+            React.createElement('input', {
+                type: 'text',
+                placeholder: '채팅방 이름 입력',
+                value: this.state.chatroom,
+                onChange: this.handleChange
+            }),
+            React.createElement(
+                'button',
+                { onClick: this.handleSearch },
+                '검색'
             )
         );
     }
@@ -130,7 +90,7 @@ var Main = React.createClass({
     displayName: 'Main',
 
     getInitialState: function getInitialState() {
-        return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '' };
+        return { curPage: 'Login', username: '', chatroomId: null, chatroomName: '', showSearch: false, showChatroom: false, chatroomKey: 0 };
     },
 
     handleLoginSuccess: function handleLoginSuccess(username) {
@@ -146,11 +106,26 @@ var Main = React.createClass({
     },
 
     handleChatroomJoin: function handleChatroomJoin(chatroomId, chatroomName) {
-        this.setState({ chatroomId: chatroomId, chatroomName: chatroomName });
+        var _this = this;
+
+        if (this.state.chatroomId) {
+            socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.state.username });
+        }
+        this.setState({ chatroomId: chatroomId, chatroomName: chatroomName, showSearch: false, showChatroom: true, chatroomKey: this.state.chatroomKey + 1 }, function () {
+            socket.emit('join', { chatroomId: chatroomId, chatroomName: chatroomName, username: _this.state.username });
+        });
     },
 
     handleNavigation: function handleNavigation(page) {
-        this.setState({ curPage: page });
+        if (page === 'ChatroomSearch') {
+            if (this.state.chatroomId) {
+                socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.state.username });
+                this.setState({ chatroomId: null, chatroomName: '', showChatroom: false });
+            }
+            this.setState({ showSearch: true, curPage: 'ChatApp' });
+        } else {
+            this.setState({ curPage: page, showSearch: false, showChatroom: false });
+        }
     },
 
     handleChangeUsername: function handleChangeUsername(newUsername) {
@@ -165,12 +140,8 @@ var Main = React.createClass({
             { className: 'main' },
             this.state.curPage === 'Login' && React.createElement(Login, { onLoginSuccess: this.handleLoginSuccess, handleRouteRegister: this.handleRouteRegister }),
             this.state.curPage !== 'Login' && this.state.curPage !== 'Register' && React.createElement(Sidebar, { onNavigate: this.handleNavigation }),
-            this.state.curPage === 'ChatApp' && React.createElement(
-                'div',
-                null,
-                React.createElement(ChatroomSearch, { onChatroomJoin: this.handleChatroomJoin }),
-                this.state.chatroomId && React.createElement(Chatroom, { username: this.state.username, chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName })
-            ),
+            this.state.curPage === 'ChatApp' && this.state.showSearch && React.createElement(ChatroomSearch, { onChatroomJoin: this.handleChatroomJoin }),
+            this.state.curPage === 'ChatApp' && this.state.showChatroom && React.createElement(Chatroom, { key: this.state.chatroomKey, username: this.state.username, chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName }),
             this.state.curPage === 'MyPage' && React.createElement(MyPage, { username: this.state.username, onChangeUsername: this.handleChangeUsername }),
             this.state.curPage === 'Register' && React.createElement(Register, { onRegisterSuccess: this.handleRegisterSuccess })
         );
@@ -280,7 +251,7 @@ var MessageForm = React.createClass({
             user: this.props.user,
             text: this.state.text
         };
-        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
+        socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
         this.setState({ text: '' });
     },
 
@@ -332,6 +303,18 @@ var Chatroom = React.createClass({
                 _this.setState({ messages: messages });
             });
         }
+    },
+
+    componentWillUnmount: function componentWillUnmount() {
+        if (this.state.chatroomId) {
+            socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.props.username });
+        }
+        socket.off('init', this._initialize);
+        socket.off('send:message', this._messageRecieve);
+        socket.off('user:join', this._userJoined);
+        socket.off('user:left', this._userLeft);
+        socket.off('change:name', this._userChangedName);
+        socket.off('updateUsersList', this._updateUsersList);
     },
 
     _initialize: function _initialize(data) {
@@ -390,7 +373,7 @@ var Chatroom = React.createClass({
     },
 
     handleMessageSubmit: function handleMessageSubmit(message) {
-        socket.emit('send:message', { chatroomId: message.chatroomId, user: message.user, text: message.text, timestamp: new Date() });
+        socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
     },
 
     render: function render() {
@@ -693,16 +676,16 @@ var Sidebar = React.createClass({
             React.createElement(
                 'button',
                 { onClick: function () {
-                        return _this.handleNavigate('ChatApp');
+                        return _this.handleNavigate('MyPage');
                     } },
-                '채팅'
+                '마이페이지'
             ),
             React.createElement(
                 'button',
                 { onClick: function () {
-                        return _this.handleNavigate('MyPage');
+                        return _this.handleNavigate('ChatroomSearch');
                     } },
-                '마이페이지'
+                '채팅방 검색'
             )
         );
     }
