@@ -103,7 +103,7 @@ app.get('/messages', (req, res) => {
 
 app.post('/change-credentials', (req, res) => {
     const { username, newName, newPassword } = req.body;
-
+    
     // Check if the new username already exists
     const checkQuery = 'SELECT * FROM users WHERE username = ?';
     db.query(checkQuery, [newName], (err, results) => {

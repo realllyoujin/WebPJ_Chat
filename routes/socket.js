@@ -48,7 +48,8 @@ var userNames = (function () {
 
 module.exports = function (io, socket) {
     var username;
-
+    
+    /*
     socket.on('join', ({ chatroomId, chatroomName, username: user }) => {
         username = user;
         if (userNames.claim(username)) {
@@ -71,13 +72,49 @@ module.exports = function (io, socket) {
             socket.emit('usernameExists', { message: 'Username already exists' });
         }
     });
+    */
 
+    socket.on('join', ({ chatroomId, chatroomName, username: user }) => {
+        
+        // 채팅방에 사용자 추가 이거 두번돈다.. 버그는 너가 잡아봐 유진아... join이 두번 호출된다.
+        const insertQuery = 'INSERT INTO chatroom_users (chatroom_id, user_name) VALUES (?, ?)';
+        db.query(insertQuery, [chatroomId, user], (err, results) => {
+            if (err) { throw err;}
+    
+            // 사용자 목록 업데이트 //GROUPBY는 임시이며 잠재적인 리스크가 있음
+            const selectQuery = 'SELECT user_name, COUNT(*) user_cnt FROM chatroom_users WHERE chatroom_id = ? GROUP BY user_name';
+            db.query(selectQuery, [chatroomId], (err, results) => {
+                if (err) { throw err; }
+    
+                const userList = results.map(row => row.user_name);
+    
+                socket.join(chatroomId);
+                socket.chatroomId = chatroomId;
+                socket.chatroomName = chatroomName;
+                socket.username = user;
+    
+                socket.emit('init', {
+                    name: user,
+                    users: userList
+                });
+    
+                socket.broadcast.to(chatroomId).emit('user:join', {
+                    name: user
+                });
+    
+                io.to(chatroomId).emit('updateUsersList', userList);
+            });
+        });
+    });
+    
     socket.on('send:message', function (data) {
+        console.log(JSON.stringify(data));
+
         const { chatroomId, text } = data;
         const timestamp = new Date();
-
+        
         const messageData = {
-            username: username,
+            username: data.username,
             message: text,
             timestamp: timestamp
         };
@@ -85,7 +122,7 @@ module.exports = function (io, socket) {
         io.to(chatroomId).emit('send:message', messageData);
 
         const query = 'INSERT INTO messages (chatroom_id, username, message, timestamp) VALUES (?, ?, ?, ?)';
-        db.query(query, [chatroomId, username, text, timestamp], (err, results) => {
+        db.query(query, [chatroomId, data.username, text, timestamp], (err, results) => {
             if (err) throw err;
         });
     });
@@ -112,6 +149,9 @@ module.exports = function (io, socket) {
         }
     });
 
+
+        //이거임요 ㅈㅅㅈㅅ 잘못틈. 켰어요. 
+    /* // 이부분 주석 해제하고 다시 코드 돌리기 
     socket.on('leave', function (data) {
         socket.leave(data.chatroomId);
         socket.broadcast.to(data.chatroomId).emit('user:left', {
@@ -120,7 +160,32 @@ module.exports = function (io, socket) {
         userNames.free(data.username);
         io.to(data.chatroomId).emit('updateUsersList', userNames.get());
     });
-
+    */
+    
+    socket.on('leave', function (data) {
+        socket.leave(data.chatroomId);
+    
+        socket.broadcast.to(data.chatroomId).emit('user:left', {
+            name: data.username
+        });
+        userNames.free(data.username);
+    
+        // 데이터베이스에서도 사용자를 제거합니다.
+        const deleteQuery = 'DELETE FROM chatroom_users WHERE chatroom_id = ? AND user_name = ?';
+        db.query(deleteQuery, [data.chatroomId, data.username], (err, results) => {
+            if (err) { throw err }
+            console.log('User removed from the chatroom:', data.username);
+            
+            // 사용자 목록을 업데이트합니다.
+            const selectQuery = 'SELECT user_name, COUNT(*) AS user_cnt FROM chatroom_users WHERE chatroom_id = ? GROUP BY user_name';
+                db.query(selectQuery, [data.chatroomId], (err, results) => {
+                    if (err) { throw err; }
+                const userList = results.map(row => row.user_name);
+                io.to(data.chatroomId).emit('updateUsersList', userList);
+            });
+        });
+    });
+    
     socket.on('disconnect', function () {
         if (socket.chatroomId) {
             socket.broadcast.to(socket.chatroomId).emit('user:left', {
