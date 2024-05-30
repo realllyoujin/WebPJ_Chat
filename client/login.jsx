@@ -46,7 +46,7 @@ var Login = React.createClass({
     render() {
         return (
             <div className='login'>
-                <h1> 유니만 들어와~😈✨ </h1>
+                <h1> 🌸 Welocome to UNI Chat 😈🌸 </h1>
                 <input
                     type="text" 
                     name="username" 

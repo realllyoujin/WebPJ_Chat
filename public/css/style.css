@@ -1,49 +1,17 @@
-/* style.css */
 
-/* 전체 페이지 배경을 아주 연한 핑크색으로 설정 */
 body {
     background-color: #fdeef2;
     font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    height: 100%;
 }
 
-/* 메인 로그인 컨테이너 스타일 */
 .main {
     text-align: center;
 }
 
-/* 로그인 박스 스타일 */
-.login {
-    background-color: transparent;
-    padding: 20px;
-    width: 100%;
-    max-width: 400px;
-    box-sizing: border-box;
-}
-
-/* 헤더 텍스트 스타일 */
-.login h1 {
-    color: #000000;
-    font-size: 24px;
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-/* 추가 텍스트 스타일 */
-.login h2 {
-    color: #000000;
-    font-size: 18px;
-    margin-bottom: 20px;
-}
-
-/* 입력 필드 스타일 */
-.login input[type="text"],
-.login input[type="password"] {
+input {
     width: 100%;
     padding: 15px;
     margin: 10px 0;
@@ -53,8 +21,36 @@ body {
     font-size: 16px;
 }
 
-/* 버튼 스타일 */
-.login button {
+ul, li {
+    list-style-type: none;
+    padding:0;
+}
+
+
+.main > .login {
+    background-color: transparent;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+    margin : 0 auto;
+    margin-top : 10%;
+}
+
+.main > .login h1 {
+    color: #000000;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.main > .login h2 {
+    color: #000000;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.main > .login button {
     width: 100%;
     padding: 15px;
     margin: 10px 0;
@@ -66,6 +62,192 @@ body {
     font-size: 16px;
 }
 
-.login button:hover {
+.main > .login button:hover {
     background-color: #b06d87;
 }
+
+
+.main > .register {
+    background-color: transparent;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+    margin : 0 auto;
+    margin-top : 10%;
+}
+
+.main > .register h1 {
+    color: #000000;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.main > .register h2 {
+    color: #000000;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.main > .register button {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #d08fa9;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.main > .rgister button:hover {
+    background-color: #b06d87;
+}
+
+
+.main > .sidebar {
+    float:left;
+    width: 200px;
+    height:100vh;
+}
+
+.main > .sidebar button {
+    float:left;
+    width: 120px;
+    padding:10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #d08fa9;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left:10px;
+    margin-top:10px;
+}
+
+
+.main > .my_page {
+    width:20%;
+    float:left;
+}
+
+.main > .my_page button {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #d08fa9;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+
+.main > .chatroom_search {
+    width:20%;
+    float:left;
+}
+
+.main > .chatroom_search button {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #d08fa9;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+
+.main .users {
+    width:10%;
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    float:right;
+    margin-right:10px;
+    margin-top:10px;
+    background-color: white; 
+    border-radius: 8px; 
+    padding: 10px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+}
+
+.main .users li {
+    padding: 5px;
+    margin: 5px 0; 
+    color: #333; 
+    border-radius: 4px; 
+}
+
+.main .chatroom_display {
+    width: 50%; 
+    display: flex;
+    align-items: center; 
+    padding: 20px;
+    margin: 10px auto; 
+    float:left;
+    font-size:20px;
+    font-weight: bold;
+}
+
+.main .messages {
+    width:60%;
+    float:left;
+    overflow-y:scroll;
+    height:65vh;
+    display:flex;
+    flex-direction: column;
+}
+
+.main .messages h2 {
+    display:none;
+}
+
+
+.main .message {
+    display:flex;
+    flex-direction: column;
+    align-items:flex-start;
+    color:black;
+    padding: 5px;
+    margin-bottom: 5px; 
+}
+
+.main .message > span {
+    background-color: #d08fa9;
+    color:white;
+    border-radius: 10px;
+    margin-right:5px;
+    padding:5px;
+}
+
+.main .my-message {
+    display:flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color:black;
+    padding: 5px;
+    margin-bottom: 5px; 
+}
+
+.main .my-message > span {
+    background-color: #d08fa9;
+    color:white;
+    border-radius: 10px;
+    margin-right:5px;
+    padding:5px;
+}
+
+.main .message_form {
+    position: fixed; 
+    bottom: 10px; 
+    width: calc(100% - 40px); 
+    padding: 20px; 
+}
+
