@@ -467,7 +467,7 @@
               React.createElement(
                   'h1',
                   null,
-                  ' 유니만 들어와~😈✨ '
+                  '🌸 Welcome to UNI Chat😈🌸 '
               ),
               React.createElement('input', {
                   type: 'text',
