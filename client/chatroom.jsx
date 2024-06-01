@@ -24,8 +24,10 @@ var UsersList = React.createClass({
     }
 });
 
+// 채팅 메세지 컴포넌트
 var Message = React.createClass({
     render() {
+        // 타임스탬프를 현지 시간으로 변환
         const time = new Date(this.props.timestamp).toLocaleTimeString();
         return (
             <div className="message">
@@ -37,6 +39,7 @@ var Message = React.createClass({
     }
 });
 
+// 채팅 메세지 목록 컴포넌트
 var MessageList = React.createClass({
     render() {
         return (
@@ -59,12 +62,14 @@ var MessageList = React.createClass({
     }
 });
 
+// 채팅 메세지 입력 폼 컴포넌트
 var MessageForm = React.createClass({
 
     getInitialState() {
         return { text: '' };
     },
 
+    // 메세지 전송 핸들러
     handleSubmit(e) {
         e.preventDefault();
         var message = {
@@ -72,7 +77,9 @@ var MessageForm = React.createClass({
             user: this.props.user,
             text: this.state.text
         };
+        // 서버로 메세지 전송
         socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
+        // 입력 필드 초기화
         this.setState({ text: '' });
     },
 
@@ -97,13 +104,16 @@ var MessageForm = React.createClass({
     }
 });
 
+// 채팅방 컴포넌트
 var Chatroom = React.createClass({
 
     getInitialState() {
         return { users: [], messages: [], text: '', chatroomId: this.props.chatroomId, chatroomName: this.props.chatroomName };
     },
 
+    //컴포넌트가 마운트되면 실행되는 메소드
     componentDidMount() {
+        // 소켓 이벤트 핸들러 등록
         socket.on('init', this._initialize);
         socket.on('send:message', this._messageRecieve);
         socket.on('user:join', this._userJoined);
@@ -111,8 +121,10 @@ var Chatroom = React.createClass({
         socket.on('change:name', this._userChangedName);
         socket.on('updateUsersList', this._updateUsersList);
 
+        // 채팅방 입장
         if (this.state.chatroomId) {
             socket.emit('join', { chatroomId: this.state.chatroomId, chatroomName: this.state.chatroomName, username: this.props.username });
+            //채팅방 메세지 불러오기
             fetch(`/messages?chatroomId=${this.state.chatroomId}`)
                 .then(response => response.json())
                 .then(messages => {
@@ -121,7 +133,9 @@ var Chatroom = React.createClass({
         }
     },
 
+    // 컴포넌트가 언마운트되면 실행되는 메소드
     componentWillUnmount() {
+        // 소켓 이벤트 핸들러 제거
         if (this.state.chatroomId) {
             socket.emit('leave', { chatroomId: this.state.chatroomId, username: this.props.username });
         }
@@ -152,6 +166,7 @@ var Chatroom = React.createClass({
         }
     },
 
+    // 사용자 퇴장 핸들러
     _userLeft(username) {
         var { users } = this.state;
         var index = users.indexOf(username);
@@ -161,6 +176,7 @@ var Chatroom = React.createClass({
         }
     },
 
+    //사용자 이름 변경 핸들러
     _userChangedName({ oldName, newName }) {
         var { users, messages } = this.state;
         var index = users.indexOf(oldName);
@@ -168,15 +184,17 @@ var Chatroom = React.createClass({
             users[index] = newName;
             this.setState({ users });
         }
+        // 메세지 중 사용자 이름 변경
         messages = messages.map(msg => msg.username === oldName ? { ...msg, username: newName } : msg);
         this.setState({ messages });
     },
-
+    // 사용자 목록 업데이트
     _updateUsersList(users) {
         this.setState({ users });
     },
 
     handleMessageSubmit(message) {
+        // 서버로 메세지 전송
         socket.emit('send:message', { chatroomId: message.chatroomId, text: message.text });
     },
 
